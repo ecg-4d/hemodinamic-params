@@ -1,0 +1,111 @@
+---
+resources:
+  - name: git
+    type: git
+    source:
+      uri:    ((git-uri))
+      branch: ((git-branch))
+      private_key: |
+        ((git-private-key))
+
+  - name: api-data-storage
+    type: s3
+    source:
+      bucket:            '/'
+      region_name:       nyc3
+      access_key_id:     ((spaces-access-key))
+      secret_access_key: ((spaces-secret-key))
+      endpoint:          ((spaces-endpoint))
+      regexp:            ((spaces-regexp))
+
+  - name: timer
+    type: time
+    source:
+      days: [Friday]
+      start: 7:00 PM
+      stop: 12:00 PM
+      location: America/Bogota
+
+
+jobs:
+  - name: unit-test
+    plan:
+      - get: git
+        trigger: true
+      - task: execute-tests
+        config:
+          platform: linux
+          inputs:
+            - name: git
+          image_resource:
+            type: registry-image
+            source: { repository: python, tag: 3.7 }
+          run:
+            path: sh
+            args:
+              - -exc
+              - |
+                pip install papermill[all] jupyter
+                export AWS_ACCESS_KEY_ID=((spaces-access-key))
+                export AWS_SECRET_ACCESS_KEY=((spaces-secret-key))
+                export BOTO3_ENDPOINT_URL=((spaces-endpoint))
+                papermill get_data_from_api.ipynb "s3://testing-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb"
+            dir: git/packages/jupyter
+
+  - name: get-data
+    plan:
+      - get: git
+        trigger: true
+        passed: [ unit-test ]
+      - get: timer
+        trigger: true
+      - get: api-data-storage
+      - task: download-api-data
+        config:
+          platform: linux
+          inputs:
+            - name: git
+            - name: api-data-storage
+          outputs:
+            - name: api-data
+          image_resource:
+            type: registry-image
+            source: { repository: python, tag: 3.7 }
+          run:
+            path: sh
+            args:
+              - -exc
+              - |
+                pip install papermill[all] jupyter
+                export AWS_ACCESS_KEY_ID=((spaces-access-key))
+                export AWS_SECRET_ACCESS_KEY=((spaces-secret-key))
+                export BOTO3_ENDPOINT_URL=((spaces-endpoint))
+                unzip ../../../api-data-storage/api-data-*.zip
+                papermill get_data_from_api.ipynb "s3://production-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb" \
+                -p api_username ((sicor-api-user)) \
+                -p api_password ((sicor-api-password)) \
+                -p pull_data_end_date $(date +%Y-%m-%d -d "-15 day") \
+                -p api_data_save_path ../../../api-data/
+            dir: git/packages/jupyter
+      - task: compress-api-data
+        config:
+          platform: linux
+          inputs:
+            - name: api-data
+          outputs:
+            - name: zip-resource
+          image_resource:
+            type: registry-image
+            source: { repository: ubuntu }
+          run:
+            path: sh
+            args:
+              - -exc
+              - |
+                apt update -y && apt upgrade -y
+                apt install -y zip
+                zip -r api-data-$(date +%Y-%m-%d -d "-15 day").zip api-data
+                mv api-data-*.zip zip-resource
+      - put: api-data-storage
+        params:
+          file: zip-resource/api-data-*.zip

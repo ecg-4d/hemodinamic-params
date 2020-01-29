@@ -18,13 +18,13 @@ resources:
       endpoint:          ((spaces-endpoint))
       regexp:            ((spaces-regexp))
 
-  - name: timer
-    type: time
-    source:
-      days: [Friday]
-      start: 7:00 PM
-      stop: 12:00 PM
-      location: America/Bogota
+#  - name: timer
+#    type: time
+#    source:
+#      days: [Friday]
+#      start: 7:00 PM
+#      stop: 12:00 PM
+#      location: America/Bogota
 
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
                 export AWS_ACCESS_KEY_ID=((spaces-access-key))
                 export AWS_SECRET_ACCESS_KEY=((spaces-secret-key))
                 export BOTO3_ENDPOINT_URL=((spaces-endpoint))
-                papermill get_data_from_api.ipynb "s3://testing-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb"
+                papermill get_data_from_api.ipynb "s3://api-data/testing-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb"
             dir: git/packages/jupyter
 
   - name: get-data
@@ -57,8 +57,8 @@ jobs:
       - get: git
         trigger: true
         passed: [ unit-test ]
-      - get: timer
-        trigger: true
+ #     - get: timer
+ #       trigger: true
       - get: api-data-storage
       - task: download-api-data
         config:
@@ -81,7 +81,7 @@ jobs:
                 export AWS_SECRET_ACCESS_KEY=((spaces-secret-key))
                 export BOTO3_ENDPOINT_URL=((spaces-endpoint))
                 unzip ../../../api-data-storage/api-data-*.zip
-                papermill get_data_from_api.ipynb "s3://production-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb" \
+                papermill get_data_from_api.ipynb "s3://api-data/production-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb" \
                 -p api_username ((sicor-api-user)) \
                 -p api_password ((sicor-api-password)) \
                 -p pull_data_end_date $(date +%Y-%m-%d -d "-15 day") \
@@ -104,7 +104,7 @@ jobs:
               - |
                 apt update -y && apt upgrade -y
                 apt install -y zip
-                zip -r api-data-$(date +%Y-%m-%d -d "-15 day").zip api-data
+                zip -r api-data-$(date +%Y-%m-%d -d "-16 day").zip api-data
                 mv api-data-*.zip zip-resource
       - put: api-data-storage
         params:

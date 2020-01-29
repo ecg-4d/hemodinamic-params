@@ -80,7 +80,7 @@ jobs:
                 export AWS_ACCESS_KEY_ID=((spaces-access-key))
                 export AWS_SECRET_ACCESS_KEY=((spaces-secret-key))
                 export BOTO3_ENDPOINT_URL=((spaces-endpoint))
-                unzip ../../../api-data-storage/api-data-*.zip
+                unzip ../../../api-data-storage/api-data-*.zip -d ../../../
                 papermill get_data_from_api.ipynb "s3://api-data/production-notebooks/get_data_from_api_$(date +'%d-%m-%Y-%X').ipynb" \
                 -p api_username ((sicor-api-user)) \
                 -p api_password ((sicor-api-password)) \

@@ -86,7 +86,8 @@ jobs:
                 -p api_password ((sicor-api-password)) \
                 -p pull_data_end_date $(date +%Y-%m-%d -d "-15 day") \
                 -p api_data_save_path ../../../api-data/ \
-                -p api_error_save_path ../../../ERROR
+                -p api_error_save_path ../../../ERROR \
+                -p concurrent_workers 10
             dir: git/packages/jupyter
       - task: compress-api-data
         config:

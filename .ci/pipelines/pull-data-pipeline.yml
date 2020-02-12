@@ -18,13 +18,13 @@ resources:
       endpoint:          ((spaces-endpoint))
       regexp:            ((spaces-regexp))
 
-#  - name: timer
-#    type: time
-#    source:
-#      days: [Friday]
-#      start: 7:00 PM
-#      stop: 12:00 PM
-#      location: America/Bogota
+  - name: timer
+    type: time
+    source:
+      days: [Monday, Tuesday, Wednesday, Thursday, Friday]
+      start: 7:00 PM
+      stop: 12:00 PM
+      location: America/Bogota
 
 
 jobs:
@@ -57,8 +57,8 @@ jobs:
       - get: git
         trigger: true
         passed: [ unit-test ]
- #     - get: timer
- #       trigger: true
+      - get: timer
+        trigger: true
       - get: api-data-storage
       - task: download-api-data
         config:

@@ -21,7 +21,7 @@ resources:
   - name: timer
     type: time
     source:
-      days: [Monday, Tuesday, Wednesday, Thursday, Friday]
+      days: [Friday]
       start: 7:00 PM
       stop: 12:00 PM
       location: America/Bogota
